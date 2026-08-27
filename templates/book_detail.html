@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{{ book.title }} — BookHive{% endblock %}
+{% block content %}
+
+<div class="book-detail">
+  <div class="book-detail-cover">
+    {% if book.cover_url %}
+      <img src="{{ book.cover_url }}" alt="Cover of {{ book.title }}">
+    {% else %}
+      <div class="book-card-cover-placeholder" style="height:360px;">{{ book.title }}</div>
+    {% endif %}
+  </div>
+
+  <div class="book-detail-info">
+    <h1>{{ book.title }}</h1>
+    <div class="book-detail-author">by {{ book.author }}</div>
+    <div class="book-detail-meta">
+      <span>{{ book.genre }}</span>
+      <span>Published {{ book.publication_year }}</span>
+      <span>
+        {% set avg = book.average_rating() %}
+        {% if avg %}
+          <span class="stars">{% for _ in range(avg|int) %}★{% endfor %}{% for _ in range(5 - avg|int) %}☆{% endfor %}</span>
+          {{ "%.1f"|format(avg) }} ({{ book.rating_count() }} review{% if book.rating_count() != 1 %}s{% endif %})
+        {% else %}
+          No ratings yet
+        {% endif %}
+      </span>
+    </div>
+
+    {% if book.description %}
+      <p class="book-detail-description">{{ book.description }}</p>
+    {% endif %}
+
+    {# ── Admin Actions ── #}
+    {% if current_user.is_authenticated and current_user.is_admin %}
+      <div class="mb-2">
+        <a href="{{ url_for('books.edit_book', id=book.id) }}" class="btn btn-secondary btn-sm">Edit Book</a>
+        <form method="POST" action="{{ url_for('books.delete_book', id=book.id) }}" class="inline-form"
+              onsubmit="return confirm('Delete this book and all its data?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+      </div>
+    {% endif %}
+
+    {# ── Shelf Selector ── #}
+    {% if current_user.is_authenticated %}
+      <form method="POST" action="{{ url_for('shelves.update_shelf', book_id=book.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="mb-1"><strong>My Shelf:</strong></label>
+        <div class="shelf-selector">
+          {% set shelves = [
+            ('want_to_read', 'Want to Read'),
+            ('reading', 'Reading'),
+            ('read', 'Read')
+          ] %}
+          {% for val, label in shelves %}
+            <button type="submit" name="shelf" value="{{ val }}"
+                    class="shelf-btn {% if user_shelf == val %}active{% endif %}">
+              {{ label }}
+            </button>
+          {% endfor %}
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Reviews Section ── #}
+<h2 class="mt-3">Reviews ({{ reviews|length }})</h2>
+
+{% if current_user.is_authenticated and not user_review %}
+  <div class="card mb-3">
+    <h3>Write a Review</h3>
+    <form method="POST" action="{{ url_for('reviews.create_review', book_id=book.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label>Rating</label>
+        <div class="star-rating-input">
+          {% for i in range(5, 0, -1) %}
+            <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}" required>
+            <label for="star{{ i }}" title="{{ i }} star{% if i > 1 %}s{% endif %}">★</label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="text">Your Review</label>
+        <textarea name="text" id="text" class="form-control" rows="4"
+                  placeholder="What did you think of this book?"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Post Review</button>
+    </form>
+  </div>
+{% endif %}
+
+{% if reviews %}
+  {% for review in reviews %}
+    <div class="review-card">
+      <div class="review-header">
+        <div>
+          <span class="review-author">
+            <a href="{{ url_for('shelves.profile', user_id=review.user.id) }}">{{ review.user.username }}</a>
+          </span>
+          <span class="stars">
+            {% for _ in range(review.rating) %}★{% endfor %}
+            {% for _ in range(5 - review.rating) %}☆{% endfor %}
+          </span>
+        </div>
+        <span class="review-date">{{ review.created_at.strftime('%b %d, %Y') }}
+          {% if review.updated_at and review.updated_at != review.created_at %}(edited){% endif %}
+        </span>
+      </div>
+      {% if review.text %}
+        <div class="review-text">{{ review.text }}</div>
+      {% endif %}
+      {% if current_user.is_authenticated and (review.user_id == current_user.id or current_user.is_admin) %}
+        <div class="review-actions">
+          <a href="{{ url_for('reviews.edit_review', review_id=review.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+          <form method="POST" action="{{ url_for('reviews.delete_review', review_id=review.id) }}" class="inline-form"
+                onsubmit="return confirm('Delete this review?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="empty-state"><p>No reviews yet. Be the first to review this book!</p></div>
+{% endif %}
+
+{% endblock %}

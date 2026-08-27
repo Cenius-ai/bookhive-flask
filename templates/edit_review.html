@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Edit Review — BookHive{% endblock %}
+{% block content %}
+
+<h1>Edit Your Review</h1>
+<p class="text-muted mb-2">for <em>{{ review.book.title }}</em></p>
+
+<div class="card" style="max-width:500px;">
+  <form method="POST" action="{{ url_for('reviews.edit_review', review_id=review.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-group">
+      <label>Rating</label>
+      <div class="star-rating-input">
+        {% for i in range(5, 0, -1) %}
+          <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}"
+                 {% if review.rating == i %}checked{% endif %} required>
+          <label for="star{{ i }}" title="{{ i }} star{% if i > 1 %}s{% endif %}">★</label>
+        {% endfor %}
+      </div>
+      {% if errors.rating %}<div class="form-error">{{ errors.rating }}</div>{% endif %}
+    </div>
+
+    <div class="form-group">
+      <label for="text">Your Review</label>
+      <textarea name="text" id="text" class="form-control" rows="5"
+                placeholder="What did you think of this book?">{{ review.text }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <a href="{{ url_for('books.book_detail', id=review.book_id) }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+
+{% endblock %}

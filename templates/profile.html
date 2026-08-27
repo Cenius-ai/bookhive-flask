@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user.username }} — BookHive{% endblock %}
+{% block content %}
+
+<div class="profile-header">
+  <div class="profile-avatar">{{ profile_user.username[0]|upper }}</div>
+  <div>
+    <h1 style="margin-bottom:.25rem;">{{ profile_user.username }}</h1>
+    <div class="profile-stats">
+      <span><strong>{{ follower_count }}</strong> follower{% if follower_count != 1 %}s{% endif %}</span>
+      <span><strong>{{ following_count }}</strong> following</span>
+      <span><strong>{{ reviews|length }}</strong> review{% if reviews|length != 1 %}s{% endif %}</span>
+    </div>
+
+    {% if current_user.is_authenticated and current_user.id != profile_user.id %}
+      <form method="POST" action="{{ url_for('follows.toggle_follow', user_id=profile_user.id) }}" class="mt-1">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if is_following %}
+          <button type="submit" class="btn btn-secondary">Unfollow</button>
+        {% else %}
+          <button type="submit" class="btn btn-primary">Follow</button>
+        {% endif %}
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Shelves ── #}
+{% macro shelf_list(entries, label) %}
+  <div class="shelf-section">
+    <h2>{{ label }} ({{ entries|length }})</h2>
+    {% if entries %}
+      <div class="shelf-list">
+        {% for entry in entries %}
+          <a href="{{ url_for('books.book_detail', id=entry.book.id) }}" class="card" style="text-decoration:none;color:inherit;padding:.75rem;">
+            <div style="display:flex;gap:.5rem;align-items:center;">
+              {% if entry.book.cover_url %}
+                <img src="{{ entry.book.cover_url }}" alt="" style="width:36px;height:54px;object-fit:cover;border-radius:3px;">
+              {% endif %}
+              <div>
+                <div style="font-weight:600;font-size:.9rem;">{{ entry.book.title }}</div>
+                <div class="text-sm text-muted">{{ entry.book.author }}</div>
+              </div>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted text-sm">No books here yet.</p>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{{ shelf_list(reading_shelved, "📖 Reading") }}
+{{ shelf_list(read_shelved, "✅ Read") }}
+{{ shelf_list(want_shelved, "📚 Want to Read") }}
+
+{# ── Reviews ── #}
+<div class="shelf-section mt-3">
+  <h2>Recent Reviews</h2>
+  {% if reviews %}
+    {% for review in reviews %}
+      <div class="review-card">
+        <div class="review-header">
+          <div>
+            <a href="{{ url_for('books.book_detail', id=review.book.id) }}"><strong>{{ review.book.title }}</strong></a>
+            <span class="stars">
+              {% for _ in range(review.rating) %}★{% endfor %}{% for _ in range(5 - review.rating) %}☆{% endfor %}
+            </span>
+          </div>
+          <span class="review-date">{{ review.created_at.strftime('%b %d, %Y') }}</span>
+        </div>
+        {% if review.text %}
+          <div class="review-text">{{ review.text }}</div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-muted text-sm">No reviews yet.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

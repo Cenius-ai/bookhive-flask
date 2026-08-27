@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Home — BookHive{% endblock %}
+{% block content %}
+
+{% if not current_user.is_authenticated %}
+  {# ── Welcome / Public View ── #}
+  <div class="welcome-hero">
+    <h1>Discover your next great read</h1>
+    <p>Track what you read, write reviews, and follow fellow book lovers.</p>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Join BookHive</a>
+  </div>
+
+  {% if top_books %}
+    <h2>Top-Rated Books</h2>
+    <div class="book-grid">
+      {% for book, avg in top_books %}
+        <a href="{{ url_for('books.book_detail', id=book.id) }}" class="book-card" style="text-decoration:none;color:inherit;">
+          {% if book.cover_url %}
+            <img src="{{ book.cover_url }}" alt="Cover of {{ book.title }}" class="book-card-cover" loading="lazy">
+          {% else %}
+            <div class="book-card-cover-placeholder">{{ book.title }}</div>
+          {% endif %}
+          <div class="book-card-body">
+            <h3>{{ book.title }}</h3>
+            <div class="book-card-author">{{ book.author }}</div>
+            <div class="book-card-meta">
+              {% if avg and avg > 0 %}
+                <span class="stars">★</span> {{ "%.1f"|format(avg) }}
+              {% endif %}
+              &middot; {{ book.genre }}
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+{% else %}
+  {# ── Authenticated Dashboard ── #}
+
+  {# Reading Shelf #}
+  <div class="section-header">
+    <h2>📖 Your Reading Shelf</h2>
+  </div>
+  {% if reading_books %}
+    <div class="book-grid mb-3">
+      {% for book in reading_books %}
+        <a href="{{ url_for('books.book_detail', id=book.id) }}" class="book-card" style="text-decoration:none;color:inherit;">
+          {% if book.cover_url %}
+            <img src="{{ book.cover_url }}" alt="Cover of {{ book.title }}" class="book-card-cover" loading="lazy">
+          {% else %}
+            <div class="book-card-cover-placeholder">{{ book.title }}</div>
+          {% endif %}
+          <div class="book-card-body">
+            <h3>{{ book.title }}</h3>
+            <div class="book-card-author">{{ book.author }}</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state mb-3">
+      <p>No books on your Reading shelf yet. <a href="{{ url_for('books.list_books') }}">Browse books</a> to get started!</p>
+    </div>
+  {% endif %}
+
+  {# Recommended #}
+  <div class="section-header">
+    <h2>✨ Recommended for You</h2>
+  </div>
+  {% if recommended %}
+    <div class="book-grid mb-3">
+      {% for book, avg in recommended %}
+        <a href="{{ url_for('books.book_detail', id=book.id) }}" class="book-card" style="text-decoration:none;color:inherit;">
+          {% if book.cover_url %}
+            <img src="{{ book.cover_url }}" alt="Cover of {{ book.title }}" class="book-card-cover" loading="lazy">
+          {% else %}
+            <div class="book-card-cover-placeholder">{{ book.title }}</div>
+          {% endif %}
+          <div class="book-card-body">
+            <h3>{{ book.title }}</h3>
+            <div class="book-card-author">{{ book.author }}</div>
+            <div class="book-card-meta">
+              {% if avg and avg > 0 %}
+                <span class="stars">★</span> {{ "%.1f"|format(avg) }}
+              {% endif %}
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state mb-3"><p>No recommendations yet. Start shelving books!</p></div>
+  {% endif %}
+
+  {# Activity Feed #}
+  <div class="section-header">
+    <h2>📡 Activity Feed</h2>
+  </div>
+  {% if feed_items %}
+    <div class="card">
+      {% for item in feed_items %}
+        <div class="feed-item">
+          <div class="feed-avatar">{{ item.user.username[0]|upper }}</div>
+          <div class="feed-body">
+            <strong><a href="{{ url_for('shelves.profile', user_id=item.user.id) }}">{{ item.user.username }}</a></strong>
+            {% if item.type == 'review' %}
+              reviewed
+              <a href="{{ url_for('books.book_detail', id=item.book.id) }}">{{ item.book.title }}</a>
+              — <span class="stars">{% for _ in range(item.rating) %}★{% endfor %}</span>
+              {% if item.text %}<span class="text-muted">"{{ item.text[:100] }}{% if item.text|length > 100 %}…{% endif %}"</span>{% endif %}
+            {% else %}
+              moved
+              <a href="{{ url_for('books.book_detail', id=item.book.id) }}">{{ item.book.title }}</a>
+              to <em>
+                {% if item.shelf == 'want_to_read' %}Want to Read{% elif item.shelf == 'reading' %}Reading{% else %}Read{% endif %}
+              </em>
+            {% endif %}
+            <div class="feed-time">{{ item.timestamp.strftime('%b %d, %Y') }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>Your feed is empty. <a href="{{ url_for('books.list_books') }}">Browse books</a> and
+      <a href="#">follow readers</a> to fill it up!</p>
+    </div>
+  {% endif %}
+
+{% endif %}
+{% endblock %}
