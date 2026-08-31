@@ -85,7 +85,7 @@ See [`INSTALL.md`](INSTALL.md) for full setup and usage instructions.
 
 ## Architecture
 
-Flask project, delivered as a complete runnable codebase (42 files). Top-level layout: `static/`, `templates/`. `install.sh` takes care of packages and initial data in a single pass; nothing else is required before launching. Step-by-step setup guide: [`INSTALL.md`](INSTALL.md).
+Flask project, delivered as a complete runnable codebase (31 files). Top-level layout: `static/`, `templates/`. `install.sh` takes care of packages and initial data in a single pass; nothing else is required before launching. Step-by-step setup guide: [`INSTALL.md`](INSTALL.md).
 
 ## FAQ
 
